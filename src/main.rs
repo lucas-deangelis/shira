@@ -1,14 +1,13 @@
 use actix_web::{App, HttpResponse, HttpServer, http::StatusCode, web};
 use serde::Deserialize;
-use rand::seq::IteratorRandom;
+use rand::Rng;
+use rand::distributions::Alphanumeric;
 use std::path::Path;
 use std::fs;
 
 static INDEX: &'static str = include_str!("index.html");
 static PASTE_FOLDER: &'static str = "pastes/";
 static FILENAME_LENGTH: usize = 4;
-static ASCII_LETTERS: [char; 62] = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0','1','2','3','4','5','6','7','8','9'];
-
 
 #[derive(Deserialize)]
 struct FormData {
@@ -19,7 +18,11 @@ fn create_filename() -> String {
     let mut rng = rand::thread_rng();
 
     let filename = loop {
-        let name = ASCII_LETTERS.iter().choose_multiple(&mut rng, FILENAME_LENGTH).into_iter().collect::<String>();
+        let name: String = std::iter::repeat(())
+            .map(|()| rng.sample(Alphanumeric))
+            .map(char::from)
+            .take(FILENAME_LENGTH)
+            .collect();
         if !Path::new(&format!("{}{}", PASTE_FOLDER, name)).exists() {
             break name;
         }
@@ -52,6 +55,13 @@ async fn receive_form(form: web::Form<FormData>) -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    if !Path::new("pastes/").exists() {
+        match fs::create_dir("pastes") {
+            Ok(_) => (),
+            Err(_) => panic!("No folder /pastes, and couldn't create it"),
+        }
+    }
+
     HttpServer::new(|| 
         App::new()
             .route("/", web::get().to(index))
