@@ -6,8 +6,8 @@ use std::fs;
 use std::path::Path;
 use std::sync::Mutex;
 
-static INDEX: &'static str = include_str!("index.html");
-static PASTE_FOLDER: &'static str = "pastes/";
+static INDEX: &str = include_str!("index.html");
+static PASTE_FOLDER: &str = "pastes/";
 static FILENAME_LENGTH: usize = 4;
 
 #[derive(Deserialize)]
@@ -39,7 +39,7 @@ impl FileCreator {
         };
 
         let complete_path = format!("{}{}", PASTE_FOLDER, filename);
-        fs::File::create(complete_path.clone()).expect("Couldn't create file");
+        fs::File::create(complete_path).expect("Couldn't create file");
 
         filename
     }
@@ -53,7 +53,9 @@ async fn index() -> HttpResponse {
 
 async fn file(filename: web::Path<String>) -> HttpResponse {
     match fs::read_to_string(format!("{}{}", PASTE_FOLDER, filename)) {
-        Ok(content) => HttpResponse::Ok().body(content),
+        Ok(content) => HttpResponse::build(StatusCode::OK)
+            .content_type("text/plain; charset=utf-8")
+            .body(content),
         Err(_) => HttpResponse::NotFound().body("Paste not found"),
     }
 }
@@ -69,7 +71,7 @@ async fn receive_form(
     };
 
     let complete_path = format!("{}{}", PASTE_FOLDER, filename);
-    fs::write(complete_path.clone(), form.code.clone()).expect("Unable to write to file");
+    fs::write(complete_path, form.code.clone()).expect("Unable to write to file");
 
     HttpResponse::Found()
         .header(actix_web::http::header::LOCATION, filename)

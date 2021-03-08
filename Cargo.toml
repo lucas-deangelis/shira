@@ -1,6 +1,6 @@
 [package]
 name = "shira"
-version = "1.1.1"
+version = "1.0.3"
 authors = ["Lucas De Angelis <deangelis.lucas@outlook.com>"]
 edition = "2018"
 
